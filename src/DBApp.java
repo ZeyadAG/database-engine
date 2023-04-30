@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -15,67 +16,81 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Properties;
 
 public class DBApp {
-
-	ArrayList<String> tableNames;
+	int MaximumRowsCountinTablePage;
+	int MaximumEntriesinOctreeNode;
 
 	public DBApp() {
 	}
 
 	public void init() throws IOException {
-		// tableNames = new ArrayList<String>();
+		Properties prop = new Properties();
+		FileInputStream fis = new FileInputStream("resources/DBApp.config");
+
+		prop.load(fis);
+		this.MaximumRowsCountinTablePage = Integer.parseInt(prop.getProperty("MaximumRowsCountinTablePage"));
+		this.MaximumEntriesinOctreeNode = Integer.parseInt(prop.getProperty("MaximumEntriesinOctreeNode"));
+
 	}
 
-	public void createTable(Table t) throws DBAppException, IOException {
-		// if (!tableNames.contains(t.tableName))
-		// tableNames.add(t.tableName);
-		// else
-		// throw new DBAppException("table name already exists!"); // mesh hatenfa3 lama
-		// ne run el program tany
-
-		File metadataFile = new File("metadata.csv");
+	public void createTable(Table t) throws DBAppException, IOException, ClassNotFoundException {
+		File metadataFile = new File("resources/metadata.csv");
 		FileWriter outputFile = new FileWriter(metadataFile, true);
 
 		String line, column, columnType, min, max, isClustering;
 		Enumeration<String> e = t.columns.keys();
 
-		while (e.hasMoreElements()) {
-			column = e.nextElement();
-			columnType = t.columns.get(column);
-			isClustering = t.clusterKey == column ? "True" : "False";
-			min = t.minValues.get(column);
-			max = t.maxValues.get(column);
+		boolean testFlag = false;
+		try {
+			TableInfo testTable = (TableInfo) readObject(t.tableName + "Info" +
+					".class");
+			testFlag = true;
+			if (testFlag)
+				throw new DBAppException("this table already exists");
 
-			line = t.tableName + "," + column + "," + columnType + "," + isClustering + "," + "null" + "," + "null"
-					+ "," + min + "," + max + "\n";
-			outputFile.append(line);
+		} catch (FileNotFoundException ex) {
+			while (e.hasMoreElements()) {
+				column = e.nextElement();
+				columnType = t.columns.get(column);
+				isClustering = t.clusterKey == column ? "True" : "False";
+				min = t.minValues.get(column);
+				max = t.maxValues.get(column);
+
+				line = t.tableName + "," + column + "," + columnType + "," + isClustering + "," + "null" + "," + "null"
+						+ "," + min + "," + max + "\n";
+				outputFile.append(line);
+			}
+			outputFile.close();
+
+			File f1 = new File("resources/data/" + t.tableName);
+			f1.mkdirs();
+
+			TableInfo tableInfo = new TableInfo();
+			tableInfo.tableName = t.tableName;
+			tableInfo.clusteringKeyName = t.clusterKey;
+			String tableInfoName = t.tableName + "Info" + ".class";
+
+			writeObject(tableInfoName, tableInfo);
+
+		} catch (Exception exc) {
+			throw new DBAppException("this table already exists");
+
 		}
-		outputFile.close();
 
-		TableInfo tableInfo = new TableInfo();
-		tableInfo.tableName = t.tableName;
-		tableInfo.clusteringKeyName = t.clusterKey;
-		String tableInfoName = t.tableName + "Info" + ".class";
-
-		writeObject(tableInfoName, tableInfo);
 	}
 
 	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws Exception {
-		// int clusteringKeyValue = 0;
-		int n = 2; // MAX TUPLES PER PAGE
-		// int counter = 0;
-		// int clusterKeyIndex = 0;
-		// deserialize table info
+		int n = MaximumRowsCountinTablePage;
 		TableInfo tableInfo = (TableInfo) readObject(strTableName + "Info" + ".class");
 		String pageName;
 
 		validateInput(htblColNameValue, tableInfo);
 
 		String clusteringKeyValue = htblColNameValue.get(tableInfo.clusteringKeyName) + "";
-		// add clus key to the array of clustering keys
 
-		tableInfo.clusteringKeyData.add((String) clusteringKeyValue); // 8ALAT
+		tableInfo.clusteringKeyData.add((String) clusteringKeyValue);
 		tableInfo.clusteringKeyData.sort(Comparator.naturalOrder());
 		writeObject(strTableName + "Info" + ".class", tableInfo);
 		System.out.println(tableInfo.clusteringKeyData);
@@ -93,7 +108,9 @@ public class DBApp {
 
 			pageName = tableInfo.tablePages.get(pagePointer);
 
-			Page page = (Page) readObject(pageName + ".class"); // deserilaize the page
+			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class"); // deserilaize
+																												// the
+																												// page
 			System.out.println("no. of tuples(before): " + page.tuples.size());
 
 			if (page.tuples.size() < n) {
@@ -115,13 +132,6 @@ public class DBApp {
 			createNewPage(tuple, tableInfo, strTableName);
 			System.out.println("ba3d create new page");
 
-			// tableInfo.pageCount++;
-			// tableInfo.tablePages.add(strTableName + "_p" + tableInfo.pageCount);
-			// pageName = tableInfo.tablePages.get(pagePointer);
-			// Page p = new Page(); // create page to add the tuple then serialize it
-			// p.tuples.add(tuple); // add the tuple to the tuples array in the page
-			// writeObject(pageName+".class", p);
-
 		}
 		printPagesContent(tableInfo);
 	}
@@ -130,7 +140,7 @@ public class DBApp {
 			throws DBAppException, ParseException {
 
 		String clusteringKeyValue = null;
-		ArrayList<String[]> result = csvReader("metadata.csv", tableInfo.tableName);
+		ArrayList<String[]> result = csvReader("resources/metadata.csv", tableInfo.tableName);
 		if (htblColNameValue.size() < result.size())
 			throw new DBAppException("missing columns");
 
@@ -218,22 +228,89 @@ public class DBApp {
 			throw new DBAppException("clustering key cannot be null");
 	}
 
+	public void validateUpdateInput(Hashtable<String, Object> htblColNameValue, TableInfo tableInfo)
+			throws DBAppException, ParseException {
+
+		ArrayList<String[]> result = csvReader("resources/metadata.csv", tableInfo.tableName);
+
+		Enumeration<String> x = htblColNameValue.keys();
+		while (x.hasMoreElements()) {
+			String current = x.nextElement();
+			boolean flag = false;
+			for (int i = 0; i < result.size(); i++) {
+				if (current.equals(result.get(i)[1])) {
+					flag = true;
+					Object temp = htblColNameValue.get(current);
+
+					System.out.println(temp);
+					if (temp instanceof Integer) {
+						if (!result.get(i)[2].equals("java.lang.Integer"))
+							throw new DBAppException("incompatible data type");
+						temp = (int) temp;
+						int min = (Integer.parseInt(result.get(i)[6]));
+						int max = (Integer.parseInt(result.get(i)[7]));
+						if ((int) temp < min || (int) temp > max) {
+							throw new DBAppException("integer out of range");
+						}
+					} else if (temp instanceof Double) {
+						System.out.println("temp class: " + temp.getClass());
+						System.out.println(result.get(i)[2]);
+						if (!result.get(i)[2].equals("java.lang.Double"))
+							throw new DBAppException("incompatible data type");
+						temp = (double) temp;
+						double min = (Double.parseDouble(result.get(i)[6]));
+						double max = (Double.parseDouble(result.get(i)[7]));
+						if ((double) temp < min || (double) temp > max) {
+							throw new DBAppException("double out of range");
+						}
+					} else if (temp instanceof String) {
+						if (!result.get(i)[2].equals("java.lang.String"))
+							throw new DBAppException("incompatible data type");
+						temp = (String) temp;
+						String min = result.get(i)[6];
+						String max = result.get(i)[7];
+						if (((String) temp).compareTo(min) < 0 || ((String) temp).compareTo(max) > 0) {
+							throw new DBAppException("string out of range");
+						}
+					} else if (temp instanceof Date) {
+						if (!result.get(i)[2].equals("java.util.Date"))
+							throw new DBAppException("incompatible data type");
+						temp = (Date) temp;
+						Date min = new SimpleDateFormat("YYYY-MM-DD").parse(result.get(i)[6]);
+						Date max = new SimpleDateFormat("YYYY-MM-DD").parse(result.get(i)[7]);
+						if (((Date) temp).compareTo(min) < 0 || ((Date) temp).compareTo(max) > 0) {
+							throw new DBAppException("date out of range");
+						}
+					} else
+						throw new DBAppException("this type is not supported");
+
+				}
+
+			}
+			if (!flag)
+				throw new DBAppException("you used a column that does not exist");
+			// counter++;
+		}
+	}
+
 	public void createNewPage(Tuple tuple, TableInfo tableInfo, String strTableName) throws IOException {
 		tableInfo.pageCount++;
 		tableInfo.tablePages.add(strTableName + "_p" + tableInfo.pageCount);
 		String pageName = strTableName + "_p" + tableInfo.pageCount;
 		Page p = new Page(); // create page to add the tuple then serialize it
 		p.tuples.add(tuple); // add the tuple to the tuples array in the page
-		writeObject(pageName + ".class", p); // serialize
+		writeObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class", p); // serialize
 		writeObject(strTableName + "Info" + ".class", tableInfo);
 		System.out.println("no. of tuples(after): " + p.tuples.size());
 	}
 
 	public void shiftTuples(String pageName, Tuple tuple, int pagePointer, String strTableName, String clusterKeyName)
 			throws ClassNotFoundException, IOException {
-		int n = 2; // read from properties
+		int n = MaximumRowsCountinTablePage; // read from properties
 		TableInfo tableInfo = (TableInfo) readObject(strTableName + "Info" + ".class");
-		Page page = (Page) readObject(pageName + ".class"); // deserialize destination page
+		Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class"); // deserialize
+																											// destination
+																											// page
 		if (page.tuples.size() < n) {
 			insertTuple(pageName, tuple, page, clusterKeyName, tableInfo, strTableName);
 			System.out.println("returned from shift");
@@ -254,7 +331,6 @@ public class DBApp {
 			System.out.println(e.getMessage());
 			System.out.println("lol 3");
 
-			// el mafrood neda5al tempTuple
 			createNewPage(tempTuple, tableInfo, strTableName);
 			System.out.println("lol 4");
 
@@ -271,12 +347,6 @@ public class DBApp {
 			br.readLine();
 			while ((line = br.readLine()) != null) {
 				String[] values = line.split(csvSeparator);
-				// for (String value : values) {
-				// System.out.print(value + " ");
-				// }
-				// result.add(values);
-				//
-				// System.out.println();
 				if (values[0].equals(strTableName)) {
 					result.add(values);
 				}
@@ -322,7 +392,7 @@ public class DBApp {
 		}
 
 		writeObject(strTableName + "Info" + ".class", tableInfo);
-		writeObject(pageName + ".class", page);
+		writeObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class", page);
 		System.out.println("no. of tuples(after): " + page.tuples.size());
 		System.out.println("5arag insert");
 
@@ -346,11 +416,14 @@ public class DBApp {
 	}
 
 	public void updateTable(String strTableName, String strClusteringKeyValue,
-			Hashtable<String, Object> htblColNameValue) throws DBAppException, ClassNotFoundException, IOException {
+			Hashtable<String, Object> htblColNameValue)
+			throws DBAppException, ClassNotFoundException, IOException, ParseException {
 
-		int n = 2; // GET ACTUAL N
+		int n = MaximumRowsCountinTablePage; // GET ACTUAL N
 		TableInfo tableInfo = (TableInfo) readObject(strTableName + "Info" + ".class");
 		ArrayList<String> clusteringKeyData = tableInfo.clusteringKeyData;
+
+		validateUpdateInput(htblColNameValue, tableInfo);
 
 		int clusterIndex = Collections.binarySearch(clusteringKeyData, strClusteringKeyValue);
 		if (clusterIndex == -1)
@@ -360,12 +433,13 @@ public class DBApp {
 
 		System.out.println("clustering key name: " + tableInfo.clusteringKeyName);
 
-		// get name from pKaza
 		String pageName = strTableName + "_p" + pagePointer; // assume page pointer is equivalent to pageCount
 
 		System.out.println("pageName: " + pageName);
 
-		Page page = (Page) readObject(pageName + ".class"); // deserialize required page
+		Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class"); // deserialize
+																											// required
+																											// page
 
 		// method for matching the right tuple with the strClusteringKeyValue and
 		// replacing its data
@@ -379,7 +453,7 @@ public class DBApp {
 			}
 		}
 
-		writeObject(pageName + ".class", page); // serialize back
+		writeObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class", page); // serialize back
 	}
 
 	public void updateTuple(Tuple t, Hashtable<String, Object> htblColNameValue) {
@@ -393,14 +467,6 @@ public class DBApp {
 		}
 
 	}
-
-	// public ArrayList<Integer> getClusteringKeyData(String tableName) throws
-	// ClassNotFoundException, IOException {
-	// String x = tableName + "Info" + ".class";
-	// Object t = (TableInfo) readObject(x);
-	// return ((TableInfo) t).clusteringKeyData;
-
-	// }
 
 	public void deleteFromTable(String strTableName,
 			Hashtable<String, Object> htblColNameValue) throws DBAppException, ClassNotFoundException, IOException {
@@ -426,9 +492,6 @@ public class DBApp {
 
 		writeObject(strTableName + "Info" + ".class", tableInfo);
 
-		// System.out.println(tableInfo.tablePages);
-		// tableInfo = (TableInfo) readObject(strTableName + "Info" + ".class");
-		// System.out.println(tableInfo.tablePages);
 		System.out.println("\nafter pages deletion");
 		printPagesContent(tableInfo);
 
@@ -437,7 +500,8 @@ public class DBApp {
 	public void deleteTuples(String strTableName, TableInfo tableInfo, Hashtable<String, Object> htblColNameValue)
 			throws ClassNotFoundException, IOException {
 		for (int i = 0; i < tableInfo.tablePages.size(); i++) {
-			Page page = (Page) readObject(tableInfo.tablePages.get(i) + ".class");
+			Page page = (Page) readObject(
+					"resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class");
 			// int tuplesToDelete = 0;
 			for (int j = 0; j < page.tuples.size(); j++) {
 				Tuple tuple = page.tuples.get(j);
@@ -450,32 +514,28 @@ public class DBApp {
 					j--;
 				}
 			}
-
-			// while (tuplesToDelete > 0) {
-			// page.tuples.remove(tuple);
-			// tableInfo.clusteringKeyData.remove(clusteringKeyValue);
-			// }
-			writeObject(tableInfo.tablePages.get(i) + ".class", page);
+			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 		writeObject(strTableName + "Info" + ".class", tableInfo);
 	}
 
 	public void orderTuples(TableInfo tableInfo) throws ClassNotFoundException, IOException {
-		int n = 2; // get real max from config
+		int n = MaximumRowsCountinTablePage; // get real max from config
 		int pageNotFullIndex = 0;
 		ArrayList<String> tablePages = tableInfo.tablePages;
 		Page pageNotFull = null;
 
 		// reach the first page that is not full
 		for (int i = 0; i < tablePages.size(); i++) {
-			Page page = (Page) readObject(tablePages.get(i) + ".class");
+			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + tablePages.get(i) + ".class");
 			if (page.tuples.size() < n) {
 				pageNotFull = page;
 				pageNotFullIndex = i;
-				writeObject(tableInfo.tablePages.get(i) + ".class", page);
+				writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class",
+						page);
 				break;
 			}
-			writeObject(tableInfo.tablePages.get(i) + ".class", page);
+			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 
 		// base case
@@ -493,7 +553,7 @@ public class DBApp {
 
 		int nextPageIndex = tablePages.indexOf(tablePages.get(pageNotFullIndex + 1));
 		for (int i = nextPageIndex; i < tablePages.size(); i++) {
-			Page page = (Page) readObject(tablePages.get(i) + ".class");
+			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + tablePages.get(i) + ".class");
 			while (tempTuples.size() < missingTuples) {
 				if (page.tuples.isEmpty())
 					break;
@@ -501,11 +561,12 @@ public class DBApp {
 
 			}
 			if (tempTuples.size() == missingTuples) {
-				writeObject(tableInfo.tablePages.get(i) + ".class", page);
+				writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class",
+						page);
 				break;
 			}
 
-			writeObject(tableInfo.tablePages.get(i) + ".class", page);
+			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 
 		// base case
@@ -514,37 +575,35 @@ public class DBApp {
 
 		// insert the tuples from tempTuples to pageNotFull
 		int tempTupleSize = tempTuples.size();
-		pageNotFull = (Page) readObject(tableInfo.tablePages.get(pageNotFullIndex) + ".class");
+		pageNotFull = (Page) readObject(
+				"resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(pageNotFullIndex) + ".class");
 
 		for (int i = 0; i < tempTupleSize; i++)
 			pageNotFull.tuples.add(tempTuples.remove(i));
 
-		writeObject(tableInfo.tablePages.get(pageNotFullIndex) + ".class", pageNotFull);
+		writeObject(
+				"resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(pageNotFullIndex) + ".class",
+				pageNotFull);
 
 		orderTuples(tableInfo);
 	}
 
 	public void deleteEmptyPages(String strTableName, TableInfo tableInfo) throws ClassNotFoundException, IOException {
-		// int pagesToDelete = 0;
 		ArrayList<String> tablePages = tableInfo.tablePages;
 
 		for (int i = 0; i < tablePages.size(); i++) {
-			Page page = (Page) readObject(tablePages.get(i) + ".class");
+			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + tablePages.get(i) + ".class");
 			if (page.tuples.isEmpty()) {
 				// pagesToDelete++;
-				File pageFile = new File(tableInfo.tablePages.get(i) + ".class");
+				File pageFile = new File(
+						"resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class");
 				pageFile.delete();
 				tableInfo.tablePages.remove(tableInfo.tablePages.get(i));
 				i--;
 			} else
-				writeObject(tableInfo.tablePages.get(i) + ".class", page);
+				writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class",
+						page);
 		}
-		// while (pagesToDelete > 0) {
-		// File pageFile = new File(tablePages.get(tablePages.size() - 1) + ".class");
-		// pageFile.delete();
-		// tableInfo.tablePages.remove(tablePages.get(tablePages.size() - 1));
-		// pagesToDelete--;
-		// }
 		writeObject(strTableName + "Info" + ".class", tableInfo);
 
 	}
@@ -564,12 +623,14 @@ public class DBApp {
 
 	public Page reachFirstNotFullPage(TableInfo tableInfo, int n) throws ClassNotFoundException, IOException {
 		for (int i = 0; i < tableInfo.tablePages.size(); i++) {
-			Page page = (Page) readObject(tableInfo.tablePages.get(i) + ".class");
+			Page page = (Page) readObject(
+					"resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class");
 			if (page.tuples.size() < n) {
-				writeObject(tableInfo.tablePages.get(i) + ".class", page);
+				writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class",
+						page);
 				return page;
 			}
-			writeObject(tableInfo.tablePages.get(i) + ".class", page);
+			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 		return null;
 	}
@@ -581,7 +642,7 @@ public class DBApp {
 		for (int i = 0; i < tableInfo.tablePages.size(); i++) {
 			String pageName = tableInfo.tablePages.get(i);
 			System.out.print(tableInfo.tableName + "_p" + i + " => " + "{");
-			Page page = (Page) readObject(pageName + ".class");
+			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class");
 			for (int j = 0; j < page.tuples.size(); j++) {
 				System.out.print("[");
 				Tuple curTuple = page.tuples.get(j);
@@ -594,7 +655,7 @@ public class DBApp {
 
 			}
 			System.out.print("}\n");
-			writeObject(tableInfo.tablePages.get(i) + ".class", page);
+			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 
 	}
@@ -650,6 +711,10 @@ public class DBApp {
 		t6.put("gpa", 3.0);
 		t6.put("name", "Sesdfaf");
 
+		Hashtable<String, Object> t7 = new Hashtable<String, Object>();
+		t7.put("id", 16);
+		t7.put("gpa", 3.0);
+
 		//
 		Hashtable<String, Object> d1 = new Hashtable<String, Object>();
 		d1.put("name", "Sesdfaf");
@@ -664,6 +729,9 @@ public class DBApp {
 		Hashtable<String, Object> u2 = new Hashtable<String, Object>();
 		u2.put("name", "Sesdfaf");
 
+		Hashtable<String, Object> u3 = new Hashtable<String, Object>();
+		u3.put("name", 4);
+
 		Table t = new Table("Student", "id", htblColNameType, mins, maxs);
 
 		// engine.createTable(t);
@@ -673,15 +741,16 @@ public class DBApp {
 		// engine.insertIntoTable("Student", t4);
 		// engine.insertIntoTable("Student", t5);
 		// engine.insertIntoTable("Student", t6);
+		// engine.insertIntoTable("Student", t7);
 
-		// engine.deleteFromTable("Stusdent", d2);
+		// engine.deleteFromTable("Student", d1);
 
-		// engine.updateTable("Student", "2", u1);
+		// engine.updateTable("Student", "2", u3);
 
-		// System.out.println("\nin main");
-		// TableInfo tableInfo = (TableInfo) engine.readObject("Student" + "Info" +
-		// ".class");
-		// engine.printPagesContent(tableInfo);
+		System.out.println("\nin main");
+		TableInfo tableInfo = (TableInfo) engine.readObject("Student" + "Info" +
+				".class");
+		engine.printPagesContent(tableInfo);
 
 		// t1,
 

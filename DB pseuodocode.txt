@@ -1,0 +1,105 @@
+n = 4
+
+p0:
+1
+2
+
+
+p1:
+
+
+
+
+
+p2:
+15
+16
+17
+
+
+
+--
+
+
+pageNotFull = p0
+
+missing: 2
+ArrayList<Tuples> : 5
+					 i:  0  1  2  3
+				tablePages:  p0 p1 p2 
+ 
+                                         i:  0 1 2 3 4 5 6 7 8  9  10 11 12
+		 	 clusteringKeyData:  1 3 4 5 11 12 
+
+
+// delete: deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue)
+
+1. get table info of the table to delete from
+
+2. loop over the pages: (removing the tuples)
+	loop over tuples:
+		if the tuple has the values of htblColNameValue:
+			remove the tuple
+			also remove its clusteringKeyValue in tableInfo.clusteringKeyData
+
+3. orderTuples: (shifting tuples)
+	1) pageNotFull = reach the first page that is not full --loop
+	2) if it is last page return
+	2) get size of missing tuples (n-size())
+	3) create ArrayList<Tuples> 
+	4) read next page
+	5) loop starting from the next page:
+		1- while ArrayList<Tuples>.size() < the size of missing tuples:
+			if current page does NOT have tuples left
+				break out of while loop
+			remove a tuple from it and add it to ArrayList<Tuples>
+		2- if ArrayList<Tuples>.size() == the size of missing tuples:
+			break from for loop
+	6) if no tuples found in ArrayList<Tuples>:
+		return
+	7) insert the tuples from ArrayList<Tuples> to pageNotFull
+	8) remove tuples from ArrayList
+	9) orderTuples()
+	
+4. loop over the pages: (removing empty pages)
+	if page is empty:
+		remove the page
+		remove also from tableInfo.tablePages
+
+
+
+[p1,p2,p3]
+ 0  1  2  3 4 
+
+size = 3
+i = 3
+
+
+
+
+
+
+
+
+
+
+i=0
+i//2=0
+pagesData[0]
+string x =pagesData(i//2);
+
+
+// insert:
+1. decide the clustering key from the input hashtable
+
+2. i = loop through the clusteringKeyData with the input key to find its location in clusteringKeyData	array and add to clusteringKeyData, shift others
+	
+3. pointer= i divided by max no. of tuples per page(N) and round down(default // or -1)
+
+4. loop through tablePages to get the name of the page to insert in (pageName):
+	if page exists:
+		deserialize page with pageName
+		add to tablePages and shift others
+	else:
+		create page anx	d add it to tablePages
+		add to tablePages and shift others

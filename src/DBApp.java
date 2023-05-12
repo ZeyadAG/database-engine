@@ -635,8 +635,6 @@ public class DBApp {
 		return null;
 	}
 
-	// }
-
 	public void printPagesContent(TableInfo tableInfo) throws ClassNotFoundException, IOException {
 
 		System.out.println("\n--------------------");
@@ -664,7 +662,10 @@ public class DBApp {
 					System.out.print(" >");
 
 			}
-			System.out.println("}\n");
+			if (i == tableInfo.tablePages.size() - 1)
+				System.out.println("}");
+			else
+				System.out.println("}\n");
 			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
 		System.out.println("--------------------\n");

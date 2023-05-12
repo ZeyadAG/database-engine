@@ -639,24 +639,35 @@ public class DBApp {
 
 	public void printPagesContent(TableInfo tableInfo) throws ClassNotFoundException, IOException {
 
+		System.out.println("\n--------------------");
+		System.out.println(tableInfo.tableName + " Table:");
+		System.out.println("--------------------");
+
 		for (int i = 0; i < tableInfo.tablePages.size(); i++) {
 			String pageName = tableInfo.tablePages.get(i);
-			System.out.print(tableInfo.tableName + "_p" + i + " => " + "{");
+			System.out.print(tableInfo.tableName + "_p" + i + ": " + "\n{");
 			Page page = (Page) readObject("resources/data/" + tableInfo.tableName + "/" + pageName + ".class");
 			for (int j = 0; j < page.tuples.size(); j++) {
-				System.out.print("[");
+				System.out.print("\n  < ");
 				Tuple curTuple = page.tuples.get(j);
-				System.out.print("id: " + curTuple.data.get("id"));
-				System.out.print(", name: " + curTuple.data.get("name"));
+				Enumeration<String> e = curTuple.data.keys();
+				while (e.hasMoreElements()) {
+					String key = e.nextElement();
+					System.out.print(key + ": " + curTuple.data.get(key));
+					if (e.hasMoreElements())
+						System.out.print(" , ");
+				}
+
 				if (j == page.tuples.size() - 1)
-					System.out.print("]");
+					System.out.print(" >\n");
 				else
-					System.out.print("], ");
+					System.out.print(" >");
 
 			}
-			System.out.print("}\n");
+			System.out.println("}\n");
 			writeObject("resources/data/" + tableInfo.tableName + "/" + tableInfo.tablePages.get(i) + ".class", page);
 		}
+		System.out.println("--------------------\n");
 
 	}
 
@@ -734,13 +745,14 @@ public class DBApp {
 
 		Table t = new Table("Student", "id", htblColNameType, mins, maxs);
 
-		// engine.createTable(t);
-		// engine.insertIntoTable("Student", t1);
-		// engine.insertIntoTable("Student", t2);
-		// engine.insertIntoTable("Student", t3);
-		// engine.insertIntoTable("Student", t4);
-		// engine.insertIntoTable("Student", t5);
-		// engine.insertIntoTable("Student", t6);
+		engine.createTable(t);
+		engine.insertIntoTable("Student", t1);
+		engine.insertIntoTable("Student", t2);
+		engine.insertIntoTable("Student", t3);
+		engine.insertIntoTable("Student", t4);
+		engine.insertIntoTable("Student", t5);
+		engine.insertIntoTable("Student", t6);
+
 		// engine.insertIntoTable("Student", t7);
 
 		// engine.deleteFromTable("Student", d1);

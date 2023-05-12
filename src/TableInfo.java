@@ -1,11 +1,5 @@
 import java.io.Serializable;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Hashtable;
 
 public class TableInfo implements Serializable {
 	String tableName;

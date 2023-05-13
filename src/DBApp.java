@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Properties;
 
 public class DBApp {
@@ -31,10 +32,10 @@ public class DBApp {
 		this.MaximumRowsCountinTablePage = Integer.parseInt(prop.getProperty("MaximumRowsCountinTablePage"));
 		this.MaximumEntriesinOctreeNode = Integer.parseInt(prop.getProperty("MaximumEntriesinOctreeNode"));
 
-		File metadataFile = new File("resources/metadata.csv");
-		FileWriter outputFile = new FileWriter(metadataFile);
-		outputFile.append("TableName,ColumnName,ColumnType,ClusteringKey,IndexName,IndexType,min,max\n");
-		outputFile.close();
+		// File metadataFile = new File("resources/metadata.csv");
+		// FileWriter outputFile = new FileWriter(metadataFile);
+		// outputFile.append("TableName,ColumnName,ColumnType,ClusteringKey,IndexName,IndexType,min,max\n");
+		// outputFile.close();
 
 	}
 
@@ -590,6 +591,11 @@ public class DBApp {
 	}
 
 	// SELECTING
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
+		ResultSet resultSet = new ResultSet();
+
+		return resultSet;
+	}
 
 	// HELPER METHODS
 	public ArrayList<String[]> csvReader(String fileName, String strTableName) {
@@ -669,7 +675,7 @@ public class DBApp {
 
 	}
 
-	public void clear() {
+	public void clear() throws IOException {
 		File dataFolder = new File("resources/data");
 
 		for (File folder : dataFolder.listFiles()) {
@@ -680,6 +686,11 @@ public class DBApp {
 
 		File infoFile = new File("StudentInfo.class");
 		infoFile.delete();
+
+		File metadataFile = new File("resources/metadata.csv");
+		FileWriter outputFile = new FileWriter(metadataFile);
+		outputFile.append("TableName,ColumnName,ColumnType,ClusteringKey,IndexName,IndexType,min,max\n");
+		outputFile.close();
 
 	}
 }

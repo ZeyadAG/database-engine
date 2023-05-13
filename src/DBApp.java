@@ -86,6 +86,12 @@ public class DBApp {
 	}
 
 	// CREATING INDEX
+	public void createIndex(String strTableName, String[] strarrColName) throws DBAppException {
+		// check that the 3 columns exist in table from csv file
+		// modify their lines in the csv to include the name of the index
+		// store their names types mins and maxs
+		// create OctTreeIndex
+	}
 
 	// INSERTING
 	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws Exception {

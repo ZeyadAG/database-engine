@@ -76,14 +76,14 @@ public class Main {
 
         // engine
 
-        // engine.createTable("Student", "id", htblColNameType, mins, maxs);
+        engine.createTable("Student", "id", htblColNameType, mins, maxs);
 
-        // engine.insertIntoTable("Student", t1);
-        // engine.insertIntoTable("Student", t2);
-        // engine.insertIntoTable("Student", t3);
-        // engine.insertIntoTable("Student", t4);
-        // engine.insertIntoTable("Student", t5);
-        // engine.insertIntoTable("Student", t6);
+        engine.insertIntoTable("Student", t1);
+        engine.insertIntoTable("Student", t2);
+        engine.insertIntoTable("Student", t3);
+        engine.insertIntoTable("Student", t4);
+        engine.insertIntoTable("Student", t5);
+        engine.insertIntoTable("Student", t6);
 
         // engine.insertIntoTable("Student", t7);
 
@@ -91,7 +91,7 @@ public class Main {
 
         // engine.updateTable("Student", "2", u3);
 
-        engine.clear();
+        // engine.clear();
 
         // print page content
         System.out.println("\nin main");

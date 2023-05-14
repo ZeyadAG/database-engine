@@ -16,4 +16,8 @@ public class TableInfo implements Serializable {
 		this.tableName = null;
 	}
 
+	public static void main(String[] args) {
+
+	}
+
 }

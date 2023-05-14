@@ -103,3 +103,17 @@ string x =pagesData(i//2);
 	else:
 		create page anx	d add it to tablePages
 		add to tablePages and shift others
+
+
+
+oct 1 [0] c1 = min to MID, c2 = (MID + 1) to max, c3 = min to MID
+oct 2 [1] c1 = (MID + 1) to max, c2 = (MID + 1) to max, c3 = min to MID
+oct 3 [2] c1 = min to MID, c2 = min to MID, c3 = min to MID
+oct 4 [3] c1 = (MID + 1) to max, c2 = min to MID, c3 = min to MID
+
+oct 5 [4] c1 = min to MID, c2 = (MID + 1) to max, c3 = (MID + 1) to max
+oct 6 [5] c1 = (MID + 1) to max, c2 = (MID + 1) to max, c3 = (MID + 1) to max
+oct 7 [6] c1 = min to MID, c2 = min to MID, c3 = (MID + 1) to max MID
+oct 8 [7] c1 = (MID + 1) to max, c2 = min to MID, c3 = (MID + 1) to max
+
+

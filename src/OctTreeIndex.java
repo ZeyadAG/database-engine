@@ -208,6 +208,7 @@ class OctTree {
         this.isDivided = false;
     }
 
+    // INSERT
     public boolean insertReference(TupleReference tupleRef) throws DBAppException {
 
         if (!bounds.boundsReference(tupleRef))
@@ -232,7 +233,6 @@ class OctTree {
     }
 
     public void subdivide() throws DBAppException {
-        System.out.println("da5al subdivide");
         // subdivide children
         Cube child1Bounds = new Cube(bounds.minC1, bounds.midC1,
                 bounds.getMidPlusOne(bounds.midC2), bounds.maxC2,
@@ -293,10 +293,10 @@ class OctTree {
 
         // clear entries in parent
         entries.clear();
-        System.out.println("5arag subdivide");
 
     }
 
+    // SELECT
     public ArrayList<TupleReference> findTupleReference(Cube range, ArrayList<TupleReference> result) {
         if (result == null)
             result = new ArrayList<TupleReference>();
@@ -323,6 +323,85 @@ class OctTree {
         return result;
     }
 
+    // DELETE
+    public void deleteTupleReference(Cube range) {
+
+        if (isDivided) {
+            children[0].deleteTupleReference(range);
+            children[1].deleteTupleReference(range);
+            children[2].deleteTupleReference(range);
+            children[3].deleteTupleReference(range);
+            children[4].deleteTupleReference(range);
+            children[5].deleteTupleReference(range);
+            children[6].deleteTupleReference(range);
+            children[7].deleteTupleReference(range);
+        }
+
+        ArrayList<TupleReference> toBeDeleted = new ArrayList<TupleReference>();
+
+        for (TupleReference tupleRef : entries) {
+            if (range.boundsReference(tupleRef))
+                toBeDeleted.add(tupleRef);
+        }
+
+        entries.removeAll(toBeDeleted);
+
+    }
+
+    public void deleteTupleReference(Cube range, int refsCount) {
+
+        if (isDivided) {
+            children[0].deleteTupleReference(range, refsCount);
+            children[1].deleteTupleReference(range, refsCount);
+            children[2].deleteTupleReference(range, refsCount);
+            children[3].deleteTupleReference(range, refsCount);
+            children[4].deleteTupleReference(range, refsCount);
+            children[5].deleteTupleReference(range, refsCount);
+            children[6].deleteTupleReference(range, refsCount);
+            children[7].deleteTupleReference(range, refsCount);
+        }
+
+        ArrayList<TupleReference> toBeDeleted = new ArrayList<TupleReference>();
+
+        for (TupleReference tupleRef : entries) {
+            if (range.boundsReference(tupleRef))
+                toBeDeleted.add(tupleRef);
+        }
+
+        entries.removeAll(toBeDeleted);
+
+        int count = countReferences();
+
+        if (count <= maxEntries)
+            mergeChildrenWithParent();
+
+    }
+
+    public void mergeChildrenWithParent() {
+        ArrayList<TupleReference> refs = findTupleReference(bounds, null);
+        deleteTupleReference(bounds);
+
+        isDivided = false;
+
+        children = new OctTree[8];
+
+        entries.addAll(refs);
+
+    }
+
+    public int countReferences() {
+        int count = this.entries.size();
+
+        if (this.children[0] != null) {
+            for (int i = 0; i < this.children.length; i++) {
+                count += this.children[i].countReferences();
+            }
+        }
+
+        return count;
+    }
+
+    // HELPER METHODS
     public static void displayOctTree(OctTree octTree, int level) {
         StringBuilder sb = new StringBuilder();
 
@@ -343,19 +422,10 @@ class OctTree {
             sb.append("Leaf (").append(octTree.entries.size()).append(" objects)");
             System.out.println(sb.toString());
 
-            for (TupleReference object : octTree.entries) {
-                System.out.println("  " + object.toString());
+            for (TupleReference tuplRef : octTree.entries) {
+                System.out.println("  " + tuplRef.toString());
             }
         }
-        /*
-         * This implementation uses recursion to display the OctTree and its objects in
-         * the console. The displayOctTree method takes an OctTree and a level
-         * parameter, which is used to indent the output based on the level of the
-         * OctTree. If the OctTree has child nodes, the method recursively calls itself
-         * on each child node with an increased level. If the OctTree is a leaf node,
-         * the method outputs the number of objects in the node and then outputs each
-         * object's information. Here's an example usage:
-         */
     }
 
     public static void main(String[] args) throws DBAppException {
@@ -381,21 +451,46 @@ class OctTree {
         t4.put("Col2", 35);
         t4.put("Col3", 80);
 
+        Hashtable<String, Object> t5 = new Hashtable<String, Object>();
+        t5.put("Col1", 10);
+        t5.put("Col2", 10);
+        t5.put("Col3", 10);
+
+        Hashtable<String, Object> t6 = new Hashtable<String, Object>();
+        t6.put("Col1", 90);
+        t6.put("Col2", 40);
+        t6.put("Col3", 190);
+
         ot.insertReference(new TupleReference(t1, "pageRefExample"));
         ot.insertReference(new TupleReference(t2, "pageRefExample"));
         ot.insertReference(new TupleReference(t3, "pageRefExample"));
         // ot.insertReference(new TupleReference(t4, "pageRefExample"));
+        // ot.insertReference(new TupleReference(t5, "pageRefExample"));
+        // ot.insertReference(new TupleReference(t6, "pageRefExample"));
 
         Cube range1 = new Cube(60, 80, 30, 45, 70, 120);
 
+        Cube range2 = new Cube(60, 60, 30, 30, 70, 70);
+
+        Cube range3 = new Cube(70, 70, 40, 40, 80, 80);
+
         displayOctTree(ot, 0);
 
+        // select
         ArrayList<TupleReference> result = ot.findTupleReference(range1, null);
-
         System.out.println("\nfound tuples:");
         for (TupleReference tupleRef : result) {
             System.out.println(tupleRef);
         }
+
+        System.out.println("count: " + ot.countReferences());
+
+        // delete
+        ot.deleteTupleReference(range3, 0);
+
+        displayOctTree(ot, 0);
+
+        System.out.println("count: " + ot.countReferences());
     }
 }
 

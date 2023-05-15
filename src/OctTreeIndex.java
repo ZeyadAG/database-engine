@@ -182,6 +182,15 @@ class Cube {
         }
         return m;
     }
+
+    public boolean intersects(Cube range) {
+        return !(compareObjects(maxC1, range.minC1) ||
+                compareObjects(range.maxC1, minC1) ||
+                compareObjects(maxC2, range.minC2) ||
+                compareObjects(range.maxC2, minC2) ||
+                compareObjects(maxC3, range.minC3) ||
+                compareObjects(range.maxC3, minC3));
+    }
 }
 
 class OctTree {
@@ -223,6 +232,7 @@ class OctTree {
     }
 
     public void subdivide() throws DBAppException {
+        System.out.println("da5al subdivide");
         // subdivide children
         Cube child1Bounds = new Cube(bounds.minC1, bounds.midC1,
                 bounds.getMidPlusOne(bounds.midC2), bounds.maxC2,
@@ -283,8 +293,110 @@ class OctTree {
 
         // clear entries in parent
         entries.clear();
+        System.out.println("5arag subdivide");
+
     }
 
+    public ArrayList<TupleReference> findTupleReference(Cube range, ArrayList<TupleReference> result) {
+        if (result == null)
+            result = new ArrayList<TupleReference>();
+
+        if (!range.intersects(bounds))
+            return result;
+
+        if (isDivided) {
+            children[0].findTupleReference(range, result);
+            children[1].findTupleReference(range, result);
+            children[2].findTupleReference(range, result);
+            children[3].findTupleReference(range, result);
+            children[4].findTupleReference(range, result);
+            children[5].findTupleReference(range, result);
+            children[6].findTupleReference(range, result);
+            children[7].findTupleReference(range, result);
+        }
+
+        for (TupleReference tupleRef : entries) {
+            if (range.boundsReference(tupleRef))
+                result.add(tupleRef);
+        }
+
+        return result;
+    }
+
+    public static void displayOctTree(OctTree octTree, int level) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < level; i++) {
+            sb.append("  ");
+        }
+
+        sb.append("Level ").append(level).append(": ");
+
+        if (octTree.children[0] != null) {
+            sb.append("Branch");
+            System.out.println(sb.toString());
+
+            for (int i = 0; i < octTree.children.length; i++) {
+                displayOctTree(octTree.children[i], level + 1);
+            }
+        } else {
+            sb.append("Leaf (").append(octTree.entries.size()).append(" objects)");
+            System.out.println(sb.toString());
+
+            for (TupleReference object : octTree.entries) {
+                System.out.println("  " + object.toString());
+            }
+        }
+        /*
+         * This implementation uses recursion to display the OctTree and its objects in
+         * the console. The displayOctTree method takes an OctTree and a level
+         * parameter, which is used to indent the output based on the level of the
+         * OctTree. If the OctTree has child nodes, the method recursively calls itself
+         * on each child node with an increased level. If the OctTree is a leaf node,
+         * the method outputs the number of objects in the node and then outputs each
+         * object's information. Here's an example usage:
+         */
+    }
+
+    public static void main(String[] args) throws DBAppException {
+        OctTree ot = new OctTree(new Cube(0, 100, 0, 50, 0, 200), 2);
+
+        Hashtable<String, Object> t1 = new Hashtable<String, Object>();
+        t1.put("Col1", 60);
+        t1.put("Col2", 30);
+        t1.put("Col3", 70);
+
+        Hashtable<String, Object> t2 = new Hashtable<String, Object>();
+        t2.put("Col1", 70);
+        t2.put("Col2", 40);
+        t2.put("Col3", 80);
+
+        Hashtable<String, Object> t3 = new Hashtable<String, Object>();
+        t3.put("Col1", 80);
+        t3.put("Col2", 45);
+        t3.put("Col3", 120);
+
+        Hashtable<String, Object> t4 = new Hashtable<String, Object>();
+        t4.put("Col1", 65);
+        t4.put("Col2", 35);
+        t4.put("Col3", 80);
+
+        ot.insertReference(new TupleReference(t1, "pageRefExample"));
+        ot.insertReference(new TupleReference(t2, "pageRefExample"));
+        ot.insertReference(new TupleReference(t3, "pageRefExample"));
+        // ot.insertReference(new TupleReference(t4, "pageRefExample"));
+
+        Cube range1 = new Cube(60, 80, 30, 45, 70, 120);
+
+        displayOctTree(ot, 0);
+
+        ArrayList<TupleReference> result = ot.findTupleReference(range1, null);
+
+        System.out.println("\nfound tuples:");
+        for (TupleReference tupleRef : result) {
+            System.out.println(tupleRef);
+        }
+    }
 }
 
 public class OctTreeIndex {

@@ -286,6 +286,8 @@ public class DBApp {
 
 	}
 
+	// TODO: sala7 el insert to eliminate dups
+
 	private void insertTuple(String pageName, Tuple tuple, Page page, String clusteringKeyName, TableInfo tableInfo,
 			String strTableName)
 			throws ClassNotFoundException, IOException {
@@ -352,6 +354,9 @@ public class DBApp {
 
 		// method for matching the right tuple with the strClusteringKeyValue and
 		// replacing its data
+
+		// TODO: get the 3 columns that have an index an create a method to update in
+		// the index that receives the 3 new values in order
 		for (int i = 0; i < page.tuples.size(); i++) {
 			Tuple t = page.tuples.get(i);
 			System.out.println("clusterKeyValue: " + t.data.get(tableInfo.clusteringKeyName));

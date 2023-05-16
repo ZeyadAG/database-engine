@@ -34,45 +34,46 @@ public class ResultSet implements Iterator {
         pointer = -1;
     }
 
-    public void removeDuplicates() {
+    // public void removeDuplicates() {
+    // for (int i = 0; i < tuples.size(); i++) {
+    // Tuple tup = tuples.get(i);
+
+    // ArrayList<String> keys = new ArrayList<String>();
+    // ArrayList<Object> values = new ArrayList<Object>();
+    // keys.addAll(tup.data.keySet());
+    // values.addAll(tup.data.values());
+
+    // for (int j = 0; j < tuples.size(); j++) {
+    // Tuple compareTup = tuples.get(j);
+    // ArrayList<String> compKeys = new ArrayList<String>();
+    // ArrayList<Object> compValues = new ArrayList<Object>();
+    // compKeys.addAll(compareTup.data.keySet());
+    // compValues.addAll(compareTup.data.values());
+
+    // if (keys.equals(compKeys) && values.equals(compValues) && i != j) {
+    // tuples.remove(i);
+
+    // }
+    // }
+    // }
+
+    // }
+
+    public ArrayList<Tuple> removeduplicates() {
+        ArrayList<Tuple> res = new ArrayList<>();
         for (int i = 0; i < tuples.size(); i++) {
-            Tuple tup = tuples.get(i);
-
-            ArrayList<String> keys = new ArrayList<String>();
-            ArrayList<Object> values = new ArrayList<Object>();
-            keys.addAll(tup.data.keySet());
-            values.addAll(tup.data.values());
-
-            for (int j = 0; j < tuples.size(); j++) {
-                Tuple compareTup = tuples.get(j);
-                ArrayList<String> compKeys = new ArrayList<String>();
-                ArrayList<Object> compValues = new ArrayList<Object>();
-                compKeys.addAll(compareTup.data.keySet());
-                compValues.addAll(compareTup.data.values());
-
-                if (keys.equals(compKeys) && values.equals(compValues) && i != j) {
-                    tuples.remove(i);
-
+            boolean f = false;
+            for (int j = 0; j < res.size(); j++) {
+                if ((res.get(j).data.equals(tuples.get(i).data))) {
+                    f = true;
                 }
             }
+            if (!f) {
+                res.add((Tuple) tuples.get(i));
+            }
         }
-
+        return res;
     }
-
-    // public void removeDuplicates() {
-    // int size = tuples.size();
-    // for (int i = 0; i < size - 1; i++) {
-    // Tuple currentTuple = tuples.get(i);
-    // for (int j = i + 1; j < size; j++) {
-    // if (currentTuple.equals(tuples.get(j))) {
-    // tuples.remove(j);
-    // size--;
-    // j--;
-    // }
-    // }
-    // }
-    // pointer = -1;
-    // }
 
     public static void main(String[] args) {
         ResultSet resultSet = new ResultSet();
@@ -115,7 +116,7 @@ public class ResultSet implements Iterator {
 
         }
 
-        resultSet.removeDuplicates();
+        // resultSet.removeDuplicates();
         // resultSet.tuples.clear();
         // resultSet.tuples.addAll(nodDup);
 

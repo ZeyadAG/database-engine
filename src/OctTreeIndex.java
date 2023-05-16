@@ -209,7 +209,7 @@ class OctTree {
     }
 
     // INSERT
-    public boolean insertReference(TupleReference tupleRef) throws DBAppException {
+    public boolean insertTupleReference(TupleReference tupleRef) throws DBAppException {
 
         if (!bounds.boundsReference(tupleRef))
             return false;
@@ -222,14 +222,14 @@ class OctTree {
             subdivide();
         }
 
-        return (children[0].insertReference(tupleRef) ||
-                children[1].insertReference(tupleRef) ||
-                children[2].insertReference(tupleRef) ||
-                children[3].insertReference(tupleRef) ||
-                children[4].insertReference(tupleRef) ||
-                children[5].insertReference(tupleRef) ||
-                children[6].insertReference(tupleRef) ||
-                children[7].insertReference(tupleRef));
+        return (children[0].insertTupleReference(tupleRef) ||
+                children[1].insertTupleReference(tupleRef) ||
+                children[2].insertTupleReference(tupleRef) ||
+                children[3].insertTupleReference(tupleRef) ||
+                children[4].insertTupleReference(tupleRef) ||
+                children[5].insertTupleReference(tupleRef) ||
+                children[6].insertTupleReference(tupleRef) ||
+                children[7].insertTupleReference(tupleRef));
     }
 
     public void subdivide() throws DBAppException {
@@ -279,14 +279,14 @@ class OctTree {
 
         // remove refs from parent and put them in children
         for (TupleReference tupleRef : entries) {
-            boolean isInserted = children[0].insertReference(tupleRef) ||
-                    children[1].insertReference(tupleRef) ||
-                    children[2].insertReference(tupleRef) ||
-                    children[3].insertReference(tupleRef) ||
-                    children[4].insertReference(tupleRef) ||
-                    children[5].insertReference(tupleRef) ||
-                    children[6].insertReference(tupleRef) ||
-                    children[7].insertReference(tupleRef);
+            boolean isInserted = children[0].insertTupleReference(tupleRef) ||
+                    children[1].insertTupleReference(tupleRef) ||
+                    children[2].insertTupleReference(tupleRef) ||
+                    children[3].insertTupleReference(tupleRef) ||
+                    children[4].insertTupleReference(tupleRef) ||
+                    children[5].insertTupleReference(tupleRef) ||
+                    children[6].insertTupleReference(tupleRef) ||
+                    children[7].insertTupleReference(tupleRef);
             if (!isInserted)
                 throw new DBAppException("Maximum entries per octant node cannot be 0");
         }
@@ -298,6 +298,10 @@ class OctTree {
 
     // SELECT
     public ArrayList<TupleReference> findTupleReference(Cube range, ArrayList<TupleReference> result) {
+        // NOTE THAT: Cube range can be used to query a range OR an exact value (point)
+        // to get exact value the min & max will be equal for each dimension of the cube
+        // so basically the range will be a point in 1-D instead of a cube in 3-D
+
         if (result == null)
             result = new ArrayList<TupleReference>();
 
@@ -346,19 +350,37 @@ class OctTree {
 
         entries.removeAll(toBeDeleted);
 
+        int count = countReferences();
+
+        if (count <= maxEntries)
+            mergeChildrenWithParent();
+
     }
 
-    public void deleteTupleReference(Cube range, int refsCount) {
+    public void mergeChildrenWithParent() {
+        ArrayList<TupleReference> refs = findTupleReference(bounds, null);
+
+        deleteReferenceNoMerge(bounds);
+
+        isDivided = false;
+
+        children = new OctTree[8];
+
+        entries.addAll(refs);
+
+    }
+
+    public void deleteReferenceNoMerge(Cube range) {
 
         if (isDivided) {
-            children[0].deleteTupleReference(range, refsCount);
-            children[1].deleteTupleReference(range, refsCount);
-            children[2].deleteTupleReference(range, refsCount);
-            children[3].deleteTupleReference(range, refsCount);
-            children[4].deleteTupleReference(range, refsCount);
-            children[5].deleteTupleReference(range, refsCount);
-            children[6].deleteTupleReference(range, refsCount);
-            children[7].deleteTupleReference(range, refsCount);
+            children[0].deleteTupleReference(range);
+            children[1].deleteTupleReference(range);
+            children[2].deleteTupleReference(range);
+            children[3].deleteTupleReference(range);
+            children[4].deleteTupleReference(range);
+            children[5].deleteTupleReference(range);
+            children[6].deleteTupleReference(range);
+            children[7].deleteTupleReference(range);
         }
 
         ArrayList<TupleReference> toBeDeleted = new ArrayList<TupleReference>();
@@ -369,23 +391,6 @@ class OctTree {
         }
 
         entries.removeAll(toBeDeleted);
-
-        int count = countReferences();
-
-        if (count <= maxEntries)
-            mergeChildrenWithParent();
-
-    }
-
-    public void mergeChildrenWithParent() {
-        ArrayList<TupleReference> refs = findTupleReference(bounds, null);
-        deleteTupleReference(bounds);
-
-        isDivided = false;
-
-        children = new OctTree[8];
-
-        entries.addAll(refs);
 
     }
 
@@ -399,6 +404,23 @@ class OctTree {
         }
 
         return count;
+    }
+
+    // UPDATE
+    public void updateTupleReference(Cube point, Object[] newValues) throws DBAppException {
+        // NOTE THAT: the Cube param will always be passed in as just point in 1-D
+        // so oldRef will only be one tuple to update
+
+        ArrayList<TupleReference> oldRef = findTupleReference(point, null);
+        TupleReference newRef = oldRef.get(0);
+
+        deleteTupleReference(point);
+
+        newRef.c1 = newValues[0];
+        newRef.c2 = newValues[1];
+        newRef.c3 = newValues[2];
+
+        insertTupleReference(newRef);
     }
 
     // HELPER METHODS
@@ -461,18 +483,21 @@ class OctTree {
         t6.put("Col2", 40);
         t6.put("Col3", 190);
 
-        ot.insertReference(new TupleReference(t1, "pageRefExample"));
-        ot.insertReference(new TupleReference(t2, "pageRefExample"));
-        ot.insertReference(new TupleReference(t3, "pageRefExample"));
-        // ot.insertReference(new TupleReference(t4, "pageRefExample"));
-        // ot.insertReference(new TupleReference(t5, "pageRefExample"));
-        // ot.insertReference(new TupleReference(t6, "pageRefExample"));
+        // insert
+        ot.insertTupleReference(new TupleReference(t1, "pageRefExample"));
+        ot.insertTupleReference(new TupleReference(t2, "pageRefExample"));
+        ot.insertTupleReference(new TupleReference(t3, "pageRefExample"));
+        ot.insertTupleReference(new TupleReference(t4, "pageRefExample"));
+        // ot.insertTupleReference(new TupleReference(t5, "pageRefExample"));
+        // ot.insertTupleReference(new TupleReference(t6, "pageRefExample"));
 
         Cube range1 = new Cube(60, 80, 30, 45, 70, 120);
 
         Cube range2 = new Cube(60, 60, 30, 30, 70, 70);
 
         Cube range3 = new Cube(70, 70, 40, 40, 80, 80);
+
+        Cube range4 = new Cube(70, 70, 40, 40, 80, 80);
 
         displayOctTree(ot, 0);
 
@@ -482,12 +507,15 @@ class OctTree {
         for (TupleReference tupleRef : result) {
             System.out.println(tupleRef);
         }
-
         System.out.println("count: " + ot.countReferences());
 
         // delete
-        ot.deleteTupleReference(range3, 0);
+        // ot.deleteTupleReference(range3);
+        // displayOctTree(ot, 0);
 
+        // update
+        Object[] newVals = { 85, 50, 120 };
+        ot.updateTupleReference(range4, newVals);
         displayOctTree(ot, 0);
 
         System.out.println("count: " + ot.countReferences());

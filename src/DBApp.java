@@ -86,10 +86,42 @@ public class DBApp {
 	}
 
 	// CREATING INDEX
-	public void createIndex(String strTableName, String[] strarrColName) throws DBAppException {
+	public void createIndex(String strTableName, String[] strarrColName)
+			throws DBAppException, ClassNotFoundException, IOException {
 		// check that the 3 columns exist in table from csv file
+		if (!tableExists(strTableName))
+			throw new DBAppException("Table does not exist");
+		// if (strarrColName.length != 3)
+		// throw new DBAppException("3 columns ");
+
+		// validate that the 3 columns exist in the metadata and belong to the same
+		// table
+
 		// modify their lines in the csv to include the name of the index
+
 		// store their names types mins and maxs
+
+		ArrayList<String[]> tableData = csvReader("resources/metadata.csv", strTableName);
+		Hashtable<String, Object> mins = new Hashtable<String, Object>();
+		Hashtable<String, Object> maxs = new Hashtable<String, Object>();
+
+		for (int i = 0; i < tableData.size(); i++) {
+			for (int j = 0; j < strarrColName.length; j++) {
+				if (tableData.get(i)[1].equals(strarrColName[j])) {
+					mins.put(strarrColName[j], tableData.get(i)[6]);
+					maxs.put(strarrColName[j], tableData.get(i)[7]);
+				}
+			}
+		}
+
+		Cube bounds = new Cube(mins.get(strarrColName[0]), maxs.get(strarrColName[0]), mins.get(strarrColName[1]),
+				maxs.get(strarrColName[1]), mins.get(strarrColName[2]), maxs.get(strarrColName[2]));
+
+		String indexName = strarrColName[0] + "_" + strarrColName[1] + "_" + strarrColName[2] + "_Index";
+		OctTreeIndex index = new OctTreeIndex(strTableName, indexName, strarrColName, bounds);
+
+		// we can validate that the index does not exist
+		writeObject("resources/indices/" + indexName + ".class", index);
 		// create OctTreeIndex
 	}
 
@@ -693,10 +725,20 @@ public class DBApp {
 			for (File file : folder.listFiles())
 				file.delete();
 			folder.delete();
+
 		}
 
+		File indicesFolder = new File("resources/indices");
+		for (File file : indicesFolder.listFiles()) {
+			file.delete();
+		}
+
+		// try {
 		File infoFile = new File("StudentInfo.class");
 		infoFile.delete();
+		// } catch (FileNotFoundException e) {
+
+		// }
 
 		File metadataFile = new File("resources/metadata.csv");
 		FileWriter outputFile = new FileWriter(metadataFile);

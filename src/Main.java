@@ -76,20 +76,33 @@ public class Main {
 
         // engine
 
-        engine.createTable("Student", "id", htblColNameType, mins, maxs);
+        // engine.createTable("Student", "id", htblColNameType, mins, maxs);
 
-        engine.insertIntoTable("Student", t1);
-        engine.insertIntoTable("Student", t2);
-        engine.insertIntoTable("Student", t3);
-        engine.insertIntoTable("Student", t4);
-        engine.insertIntoTable("Student", t5);
-        engine.insertIntoTable("Student", t6);
+        // engine.insertIntoTable("Student", t1);
+        // engine.insertIntoTable("Student", t2);
+        // engine.insertIntoTable("Student", t3);
+        // engine.insertIntoTable("Student", t4);
+        // engine.insertIntoTable("Student", t5);
+        // engine.insertIntoTable("Student", t6);
 
         // engine.insertIntoTable("Student", t7);
 
         // engine.deleteFromTable("Student", d1);
 
         // engine.updateTable("Student", "2", u3);
+
+        String[] colNames = { "gpa", "id", "name" };
+
+        engine.createIndex("Student", colNames);
+
+        OctTreeIndex oti = (OctTreeIndex) engine.readObject("resources/indices/gpa_id_name_Index.class");
+
+        System.out.println("max entries: " + oti.octTree.maxEntries);
+
+        Cube bounds = oti.octTree.bounds;
+        System.out.println("minC1: " + bounds.minC1 + ", maxC1: " + bounds.maxC1);
+        System.out.println("minC2: " + bounds.minC2 + ", maxC2: " + bounds.maxC2);
+        System.out.println("minC3: " + bounds.minC3 + ", maxC3: " + bounds.maxC3);
 
         // engine.clear();
 
